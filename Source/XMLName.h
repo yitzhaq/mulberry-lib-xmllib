@@ -98,8 +98,8 @@ private:
 	{
 		if (mOwnsData)
 		{
-			delete mName;
-			delete mNamespace;
+			free(const_cast<char*>(mName));
+			free(const_cast<char*>(mNamespace));
 		}
 		mOwnsData = false;
 		mName = NULL;
