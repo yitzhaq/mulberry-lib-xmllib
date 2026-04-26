@@ -90,6 +90,17 @@ public:
 	static void WriteAttribute(XMLNode* node, const cdstring& name, bool value);
 	static void WriteAttributeEnum(XMLNode* node, const cdstring& name, uint32_t index, const char** sarray);
 
+#if SIZEOF_LONG == 8
+	static inline bool ReadData(const XMLNode* node, long& value, bool use_stdattribute = true)
+		{ int32_t v; bool r = ReadData(node, v, use_stdattribute); value = v; return r; }
+	static inline void WriteData(XMLNode* node, long value, bool use_stdattribute = true)
+		{ WriteData(node, static_cast<int32_t>(value), use_stdattribute); }
+	static inline bool ReadAttribute(const XMLNode* node, const cdstring& name, long& value)
+		{ int32_t v; bool r = ReadAttribute(node, name, v); value = v; return r; }
+	static inline void WriteAttribute(XMLNode* node, const cdstring& name, long value)
+		{ WriteAttribute(node, name, static_cast<int32_t>(value)); }
+#endif
+
 protected:
 	XMLName mKey;
 };
