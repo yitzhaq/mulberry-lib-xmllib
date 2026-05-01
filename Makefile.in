@@ -33,6 +33,8 @@ D = .so
 LIBRARY = libXMLLib
 LIBDIR = $(DESTDIR)$(prefix)/lib
 INCDIR = $(DESTDIR)$(prefix)/include
+XML_PARSER_OBJ = @XML_PARSER_OBJ@
+
 OBJS = \
 	Source/CStreamBuffer$O \
 	Source/XMLDocument$O \
@@ -41,13 +43,7 @@ OBJS = \
 	Source/XMLNode$O \
 	Source/XMLObject$O \
 	Source/XMLParserSAX$O \
-	Source/XMLSAXSimple$O
-
-# not used right now
-#Source/XMLDOMlibxml2$O
-#Source/XMLGeneratorlibxml2$O
-#Source/XMLSAXlibxml2$O
-#Source/XMLSAXMac$O
+	$(XML_PARSER_OBJ)
 
 .PHONY : all clean distclean debug
 
@@ -68,7 +64,8 @@ include $(JX_MAKE_INCLUDE_DIR)/jx_config
 CXXDEBUG = -g
 CXXOPT = @CXXOPT@
 CXXWARN = @CXXWARN@
-CPPFLAGS = $(J_RAW_SYSTEM_STUFF) -include ../../Linux/Sources/Mulberry_Prefix.h -I../../Sources_Common/i18n/Charsets -I../../Linux/Includes -I../../Sources_Common -I../../Linux/Resources -I../../Sources_Common/Utilities/ -I$(JX_ROOT)/include/jcore -I$(JX_ROOT)/include/jx -I$(JX_ROOT)/include/jximage -I$(JX_ROOT)/ACE/ACE_wrappers
+LIBXML2_CFLAGS = @LIBXML2_CFLAGS@
+CPPFLAGS = $(J_RAW_SYSTEM_STUFF) $(LIBXML2_CFLAGS) -include ../../Linux/Sources/Mulberry_Prefix.h -I../../Sources_Common/i18n/Charsets -I../../Linux/Includes -I../../Sources_Common -I../../Linux/Resources -I../../Sources_Common/Utilities/ -I$(JX_ROOT)/include/jcore -I$(JX_ROOT)/include/jx -I$(JX_ROOT)/include/jximage -I$(JX_ROOT)/ACE/ACE_wrappers
 CXXFLAGS = @CXXFLAGS@ $(CPPFLAGS) $(CXXOPT) $(CXXDEBUG) $(CXXWARN)
 
 include ../include/libraryrules.mak

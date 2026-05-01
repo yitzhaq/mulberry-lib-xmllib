@@ -22,6 +22,7 @@
 #include "XMLParserSAX.h"
 
 #include <libxml/parser.h>
+#include <istream>
 
 namespace xmllib
 {
@@ -34,6 +35,7 @@ public:
 
 	virtual void ParseData(const char* data);
 	virtual void ParseFile(const char* filename);
+	virtual void ParseStream(std::istream& is);
 
 protected:
 	virtual void HandleException(const std::exception& ex);

@@ -18,48 +18,33 @@
 
 #include "XMLSAXlibxml2.h"
 
+#include <libxml/globals.h>
+#include <libxml/parser.h>
 #include <libxml/parserInternals.h>
 
 #include <cstdarg>
-#include <strstream>
+#include <cstring>
+#include <sstream>
+#include <string>
 
 using namespace xmllib;
+
+static void XMLCDECL _SilentError(void*, const char*, ...) {}
 
 XMLSAXlibxml2::XMLSAXlibxml2()
 {
 	mParseContext = NULL;
 
-	xmlSAXHandler handlers =
-	{
-		NULL,						// internalSubset
-		NULL,						// isStandalone
-		NULL,						// hasInternalSubset
-		NULL,						// hasExternalSubset
-		NULL,						// resolveEntity
-		NULL,						// getEntity
-		NULL,						// entityDecl
-		NULL,						// notationDecl
-		NULL,						// attributeDecl
-		NULL,						// elementDecl
-		NULL,						// unparsedEntityDecl
-		NULL,						// setDocumentLocator
-		_StartDocument,				// startDocument
-		_EndDocument,				// endDocument
-		_StartElement,				// startElement
-		_EndElement,				// endElement
-		NULL,						// reference
-		_Characters,				// characters
-		NULL,						// ignorableWhitespace
-		NULL,						// processingInstruction
-		_Comment,					// comment
-		_Warning,					// warning
-		_Error,						// error
-		_FatalError,				// fatalError
-		NULL,						// getParameterEntity
-		NULL,						// cdataBlock
-		NULL						// externalSubset
-	};
-	mSAXHandler = handlers;
+	::memset(&mSAXHandler, 0, sizeof(mSAXHandler));
+	mSAXHandler.startDocument = _StartDocument;
+	mSAXHandler.endDocument = _EndDocument;
+	mSAXHandler.startElement = _StartElement;
+	mSAXHandler.endElement = _EndElement;
+	mSAXHandler.characters = _Characters;
+	mSAXHandler.comment = _Comment;
+	mSAXHandler.warning = _Warning;
+	mSAXHandler.error = _Error;
+	mSAXHandler.fatalError = _FatalError;
 	
 	mError = false;
 }
@@ -72,12 +57,45 @@ XMLSAXlibxml2::~XMLSAXlibxml2()
 
 void XMLSAXlibxml2::ParseData(const char* data)
 {
-	mParseContext = ::xmlCreateFileParserCtxt("test.xml");
+	int options = XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_NOCDATA;
+
+	mParseContext = ::xmlCreatePushParserCtxt(&mSAXHandler, this, NULL, 0, NULL);
+	if (!mParseContext)
+	{
+		mError = true;
+		return;
+	}
+
+	::xmlCtxtUseOptions(mParseContext, options);
+
+	::xmlParseChunk(mParseContext, data, ::strlen(data), 1);
+
+	::xmlFreeParserCtxt(mParseContext);
+	mParseContext = NULL;
+}
+
+void XMLSAXlibxml2::ParseFile(const char* file)
+{
+	int options = XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_NOCDATA;
+
+	xmlGenericErrorFunc oldHandler = xmlGenericError;
+	void* oldCtx = xmlGenericErrorContext;
+	::xmlSetGenericErrorFunc(NULL, _SilentError);
+
+	mParseContext = ::xmlCreateFileParserCtxt(file);
+
+	::xmlSetGenericErrorFunc(oldCtx, oldHandler);
+
+	if (!mParseContext)
+	{
+		mError = true;
+		return;
+	}
 
 	mParseContext->sax = &mSAXHandler;
 	mParseContext->userData = this;
 
-	::xmlKeepBlanksDefault(0);
+	::xmlCtxtUseOptions(mParseContext, options);
 
 	::xmlParseDocument(mParseContext);
 
@@ -86,20 +104,15 @@ void XMLSAXlibxml2::ParseData(const char* data)
 	mParseContext = NULL;
 }
 
-void XMLSAXlibxml2::ParseFile(const char* file)
+void XMLSAXlibxml2::ParseStream(std::istream& is)
 {
-	mParseContext = ::xmlCreateFileParserCtxt(file);
+	if (is.fail())
+		return;
 
-	mParseContext->sax = &mSAXHandler;
-	mParseContext->userData = this;
-
-	::xmlKeepBlanksDefault(0);
-
-	::xmlParseDocument(mParseContext);
-
-	mParseContext->sax = NULL;
-	::xmlFreeParserCtxt(mParseContext);
-	mParseContext = NULL;
+	std::ostringstream oss;
+	oss << is.rdbuf();
+	std::string data = oss.str();
+	ParseData(data.c_str());
 }
 
 void XMLSAXlibxml2::HandleException(const std::exception& ex)
@@ -157,10 +170,10 @@ void XMLSAXlibxml2::_StartElement(void* parser, const xmlChar* name, const xmlCh
 	{
 		for(const xmlChar** item = p; item && *item; item++)
 		{
-			std::string name = (const char *) *item++;
-			std::string value = (const char *) *item;
+			std::string attr_name = (const char *) *item++;
+			std::string attr_value = (const char *) *item;
 
-			attrs.push_back(new XMLAttribute(name, value));
+			attrs.push_back(new XMLAttribute(attr_name, attr_value));
 		}
 	}
 
@@ -235,7 +248,7 @@ void XMLSAXlibxml2::_Warning(void* parser, const char* fmt, ...)
 	std::va_list arg;
 	char buff[1024];
 	va_start(arg, fmt);
-	std::vsprintf(buff, fmt, arg);
+	std::vsnprintf(buff, sizeof(buff), fmt, arg);
 	va_end(arg);
 
 	// Do callback method
@@ -263,7 +276,7 @@ void XMLSAXlibxml2::_Error(void* parser, const char* fmt, ...)
 	char buff[1024];
 
 	va_start(arg, fmt);
-	std::vsprintf(buff, fmt, arg);
+	std::vsnprintf(buff, sizeof(buff), fmt, arg);
 	va_end(arg);
 
 	// Do callback method
@@ -291,7 +304,7 @@ void XMLSAXlibxml2::_FatalError(void* parser, const char *fmt, ...)
 	char buff[1024];
 
 	va_start(arg, fmt);
-	std::vsprintf(buff, fmt, arg);
+	std::vsnprintf(buff, sizeof(buff), fmt, arg);
 	va_end(arg);
 
 	// Do callback method
