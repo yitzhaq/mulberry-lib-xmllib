@@ -57,7 +57,7 @@ XMLSAXlibxml2::~XMLSAXlibxml2()
 
 void XMLSAXlibxml2::ParseData(const char* data)
 {
-	int options = XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_NOCDATA;
+	int options = XML_PARSE_NONET | XML_PARSE_NOCDATA;
 
 	mParseContext = ::xmlCreatePushParserCtxt(&mSAXHandler, this, NULL, 0, NULL);
 	if (!mParseContext)
@@ -76,7 +76,7 @@ void XMLSAXlibxml2::ParseData(const char* data)
 
 void XMLSAXlibxml2::ParseFile(const char* file)
 {
-	int options = XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_NOCDATA;
+	int options = XML_PARSE_NONET | XML_PARSE_NOCDATA;
 
 	xmlGenericErrorFunc oldHandler = xmlGenericError;
 	void* oldCtx = xmlGenericErrorContext;
