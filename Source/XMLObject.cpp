@@ -111,7 +111,7 @@ bool XMLObject::ReadData(const XMLNode* node, bool& value, bool use_stdattribute
 			value = true;
 			return true;
 		}
-		else if (strcmp(node->Data().c_str(), cXMLTrue) == 0)
+		else if (strcmp(node->Data().c_str(), cXMLFalse) == 0)
 		{
 			value = false;
 			return true;
