@@ -102,7 +102,7 @@ public:
 		SetData(data);
 	}
 	explicit XMLNode(const XMLNode& copy)
-		{ _copy(copy); }
+		{ mParent = NULL; _copy(copy); }
 	explicit XMLNode(const XMLNode& copy, XMLNode* parent)
 		{ mParent = parent; _copy(copy); }
 	~XMLNode();
